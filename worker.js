@@ -18,7 +18,7 @@ const TIME_ZONE = 'Asia/Shanghai'  //For scheduler run time display
 // default headers
 const CONTENT_TYPE_URLENCODED = "application/x-www-form-urlencoded"
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/103.0.5060.134 Safari/537.36"
-const RequestHeaders = new Headers()
+var RequestHeaders = new Headers()
 
 /* begin authentication */
 function checkRequestAuth(request) {
@@ -48,7 +48,8 @@ function checkAuth(str, userpass) {
 /* end authentication */
 
 async function login(ip = "1.1.1.1") {
-   RequestHeaders.set("User-Agent", USER_AGENT)
+   let headers = await freenom.get("Headers") || "[]"   
+   RequestHeaders = new Headers(JSON.parse(headers) || [])
    RequestHeaders.set("X-Forwarded-For", ip)
    /* Get existed login cookies from KV */
    let cookies = JSON.parse(await freenom.get("cookies")) ?? []
@@ -173,18 +174,17 @@ async function handleRequest(request) {
    if (request.url.endsWith("favicon.ico")) {
       return new Response("", { status: 404 })
    }
-   // const workerIP = await (await fetch("http://ident.me")).text()
    const clientIP = request.headers.get("cf-connecting-ip")
    await login(clientIP)
    const domainInfo = await getDomainInfo()
    //await logout()
    const domains = domainInfo.domains
    const domainHtml = []
-   let color = "green"
    for (const domain in domains) {
       const days = domains[domain].days
-      if (days < 15) color = orange
-      if (days < 8) color = red
+      let color = "green"
+      if (days < 15) color = "orange"
+      if (days < 8) color = "red"
       domainHtml.push(`<p><span class="domain">${domain}</span> 还有 <span style="font-weight: bold;color:${color};">${days}</span> 天更新</p>`)
    }
    if (domainHtml.length === 0)

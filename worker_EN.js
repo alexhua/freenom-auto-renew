@@ -18,7 +18,7 @@ const TIME_ZONE = 'UTC'  //For scheduler run time display
 // default headers
 const CONTENT_TYPE_URLENCODED = "application/x-www-form-urlencoded"
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/103.0.5060.134 Safari/537.36"
-const RequestHeaders = new Headers()
+var RequestHeaders = new Headers()
 
 /* begin authentication */
 function checkRequestAuth(request) {
@@ -48,7 +48,8 @@ function checkAuth(str, userpass) {
 /* end authentication */
 
 async function login(ip = "1.1.1.1") {
-   RequestHeaders.set("User-Agent", USER_AGENT)
+   let headers = await freenom.get("Headers") || "[]"   
+   RequestHeaders = new Headers(JSON.parse(headers) || [])
    RequestHeaders.set("X-Forwarded-For", ip)
    /* Get existed login cookies from KV */
    let cookies = JSON.parse(await freenom.get("cookies")) ?? []
@@ -180,15 +181,15 @@ async function handleRequest(request) {
    //await logout()
    const domains = domainInfo.domains
    const domainHtml = []
-   let color = "green"
    for (const domain in domains) {
       const days = domains[domain].days
-      if (days < 15) color = orange
-      if (days < 8) color = red
-      domainHtml.push(`<p><span class="domain">${domain}</span> still has <span style="font-weight: bold;color:${color};">${days}</span> days until renewal.</p>`)
+      let color = "green"
+      if (days < 15) color = "orange"
+      if (days < 8) color = "red"
+      domainHtml.push(`<p><span class="domain">${domain}</span> has <span style="font-weight: bold;color:${color};">${days}</span> days until expiry</p>`)
    }
    if (domainHtml.length === 0)
-      domainHtml.push('<p class="warning">Failed to checkup domain information</p>')
+      domainHtml.push('<p class="warning">Failed to lookup domain information</p>')
    const lastScheduledTime = await freenom.get("lastScheduledTime") ?? 'N/A'
    const html = `
    <!DOCTYPE html>
@@ -204,7 +205,7 @@ async function handleRequest(request) {
         }
         .domain {
             color: blue;
-            width: 48vw;            
+            width: 46vw;            
             text-align: end;            
             font-weight: bold;
             display: inline-block;
